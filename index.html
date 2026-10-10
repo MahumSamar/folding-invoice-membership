@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Membership — Folding Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0808;
+    --ink: #e9e5de;
+    --label: #d8d4ce;
+    --muted: #8a8681;
+    --faint: #57534f;
+    --line: rgba(255, 255, 255, 0.07);
+    --tile: #181515;
+    --paper: #f8f3ec;
+    --paper-ink: #262422;
+    --paper-muted: #85817c;
+    --red: #d63c2a;
+    --col: 478px;
+    --row: 79px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+  }
+
+  body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  /* ───────── Section ───────── */
+  .membership {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    padding: 34px 20px 0;
+    isolation: isolate;
+  }
+
+  .column {
+    position: relative;
+    width: min(var(--col), 100%);
+    /* top-aligned at the reference height, drifts toward centre on taller screens */
+    margin: clamp(0px, (100vh - 694px) * 0.5, 420px) auto auto;
+    flex: none;
+    z-index: 1;
+  }
+
+  .title {
+    font-family: "EB Garamond", "Cormorant Garamond", Garamond, Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(42px, 11.5vw, 57px);
+    line-height: 55px;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin-bottom: 35px;
+  }
+
+  /* ───────── Rows ───────── */
+  .rows { list-style: none; }
+
+  .row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    height: var(--row);
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .row::before {
+    content: "";
+    position: absolute;
+    inset: 3px -26px 3px -26px;
+    border-radius: 14px;
+    background: #151212;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    z-index: -1;
+  }
+
+  button.row:focus-visible { outline: none; }
+  button.row:focus-visible::before { opacity: 1; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
+
+  @media (hover: hover) {
+    button.row:hover::before { opacity: 1; }
+  }
+
+  .tile {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: var(--tile);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
+    display: grid;
+    place-items: center;
+    color: #8f8a85;
+  }
+
+  .tile svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .label {
+    flex: 1;
+    min-width: 0;
+    font-size: 16.5px;
+    font-weight: 500;
+    letter-spacing: -0.011em;
+    color: var(--label);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .value {
+    flex: none;
+    font-size: 16.5px;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    color: var(--muted);
+  }
+
+  .pill {
+    flex: none;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 17px;
+    background: #1c1919;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+
+  .pill:hover { background: #242020; color: #a8a39d; }
+
+  .chev {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-right: 1px;
+    fill: none;
+    stroke: var(--faint);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Where the folded invoice rests inside the row */
+  .slot {
+    flex: none;
+    width: 66px;
+    height: 30px;
+  }
+
+  /* ───────── Corner card (Higgsfield) ───────── */
+  .card {
+    position: absolute;
+    left: calc(50% + 46px);
+    bottom: -232px;
+    width: 330px;
+    height: auto;
+    transform: rotate(13deg);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  /* ───────── Dimmer ───────── */
+  .dim {
+    position: absolute;
+    inset: 0;
+    background: #040303;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .is-open .dim { pointer-events: auto; cursor: default; }
+
+  /* ───────── Folding paper ───────── */
+  .paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 420px;
+    height: 561px;
+    transform-origin: 0 0;
+    perspective: 2200px;
+    perspective-origin: 50% 50%;
+    pointer-events: none;
+    z-index: 6;
+    will-change: transform;
+  }
+
+  .is-open .paper { pointer-events: auto; }
+
+  .panel {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 187px;
+    will-change: transform;
+  }
+
+  .panel--mid { top: 186px; height: 189px; }
+  .panel--top { top: 0; transform-origin: 50% 100%; }
+  .panel--bot { top: 374px; transform-origin: 50% 0; }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--paper);
+  }
+
+  .face--back { background: #f7f2eb; }
+
+  .shade {
+    position: absolute;
+    inset: 0;
+    background: #17120c;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The invoice itself: one 420×561 sheet, cloned into each third */
+  .sheet {
+    position: absolute;
+    left: 0;
+    width: 420px;
+    height: 561px;
+    color: var(--paper-ink);
+    font-size: 13.5px;
+    line-height: 21px;
+    letter-spacing: -0.003em;
+  }
+
+  .panel--top .sheet { top: 0; }
+  .panel--mid .sheet { top: -186px; }
+  .panel--bot .sheet { top: -374px; }
+
+  .sheet h2 {
+    position: absolute;
+    left: 30px;
+    top: 27px;
+    font-family: "Newsreader", "EB Garamond", Georgia, serif;
+    font-weight: 400;
+    font-size: 33px;
+    line-height: 40px;
+    letter-spacing: -0.015em;
+    color: #1d1b1a;
+  }
+
+  .logo {
+    position: absolute;
+    right: 25px;
+    top: 24px;
+    width: 47px;
+    height: 47px;
+    border-radius: 11px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(4, 1fr);
+  }
+
+  .logo i:nth-child(1) { background: #050505; }
+  .logo i:nth-child(2) { background: #e9e5da; }
+  .logo i:nth-child(3) { background: #f04fd8; }
+  .logo i:nth-child(4) { background: #4dfa9b; }
+  .logo i:nth-child(5) { background: #d8371a; }
+  .logo i:nth-child(6) { background: #1fa9ee; }
+  .logo i:nth-child(7) { background: #f8cf12; }
+  .logo i:nth-child(8) { background: #1f49ee; }
+
+  .meta {
+    position: absolute;
+    left: 30px;
+    top: 77px;
+    color: var(--paper-muted);
+  }
+
+  .meta b { font-weight: 500; color: #2b2927; }
+
+  .from, .to { position: absolute; top: 163px; color: #6d6965; }
+  .from { left: 30px; }
+  .to { left: 229px; }
+
+  .from strong, .to strong {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #1f1d1c;
+    letter-spacing: -0.008em;
+  }
+
+  .to .name { font-weight: 500; color: #2b2927; }
+  .to .mail { color: #4f4b48; }
+
+  .chip {
+    position: absolute;
+    right: 25px;
+    top: 164px;
+    width: 44px;
+    height: 20px;
+    border-radius: 4px;
+    background: #e5e0d9;
+    color: #9c9791;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  .rule {
+    position: absolute;
+    left: 30px;
+    right: 26px;
+    height: 1px;
+    background: #e2ddd5;
+  }
+
+  .rule--a { top: 413px; }
+  .rule--b { top: 489px; }
+
+  .line {
+    position: absolute;
+    left: 30px;
+    right: 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 22px;
+    font-size: 14.5px;
+    color: #3b3836;
+    letter-spacing: -0.006em;
+  }
+
+  .line .amt { position: relative; font-weight: 500; color: #2b2927; }
+
+  .line--1 { top: 426px; }
+  .line--2 { top: 455px; }
+  .line--3 { top: 502px; font-size: 15px; font-weight: 700; color: #1d1b1a; }
+  .line--3 .amt { font-weight: 700; color: #1d1b1a; }
+
+  .mark {
+    position: absolute;
+    overflow: visible;
+    fill: none;
+    stroke: var(--red);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+
+  .mark path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+  .mark--strike { left: -4px; top: 50%; width: calc(100% + 8px); height: 10px; margin-top: -5px; stroke-width: 1.5; }
+  .mark--circle { left: -13px; top: 50%; width: calc(100% + 26px); height: 34px; margin-top: -17px; stroke-width: 1.5; }
+
+  /* ───────── Download button ───────── */
+  .download {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    height: 44px;
+    padding: 0 30px;
+    border-radius: 22px;
+    background: #fff;
+    color: #1a1918;
+    font-size: 15.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 7;
+    will-change: transform, opacity;
+  }
+
+  .is-open .download { pointer-events: auto; }
+  .download span { display: block; transition: transform 0.15s ease; }
+  .download:active span { transform: scale(0.96); }
+
+  /* ───────── Responsive ───────── */
+  @media (max-width: 560px) {
+    :root { --row: 72px; }
+    .membership { padding: 28px 20px 0; }
+    .title { margin-bottom: 26px; }
+    .row { gap: 14px; }
+    .row::before { inset: 3px -12px; border-radius: 12px; }
+    .label { font-size: 16px; }
+    .value { font-size: 15.5px; }
+    .card { left: auto; right: -92px; width: 300px; bottom: -214px; }
+  }
+
+  @media (max-height: 620px) {
+    :root { --row: 64px; }
+    .membership { padding-top: 22px; }
+    .title { font-size: 44px; margin-bottom: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<section class="membership" id="membership">
+
+  <div class="column">
+    <h1 class="title">Membership</h1>
+
+    <ul class="rows">
+      <li class="row">
+        <span class="tile"><svg viewBox="0 0 24 24"><rect x="6" y="3.5" width="12" height="17" rx="2.5"/><circle cx="12" cy="11" r="2"/><path d="M9 16.2c.7-1.2 1.8-1.8 3-1.8s2.300.6 3 1.800M10.500 6.500h3"/></svg></span>
+        <span class="label">Member</span>
+        <span class="value">ankur</span>
+      </li>
+      <li class="row">
+        <span class="tile"><svg viewBox="0 0 24 24"><rect x="3.500" y="6" width="17" height="12" rx="3"/><path d="M3.500 10.500h17"/></svg></span>
+        <span class="label">ankursahuhp@gmail.com</span>
+        <button class="pill" type="button">Edit</button>
+      </li>
+      <li>
+        <button class="row" type="button">
+          <span class="tile"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M5 13.500h14M8.500 10V8M12.500 3.500l.7 1.500 1.500.7-1.500.7-.7 1.500-.7-1.500-1.500-.7 1.500-.7zM17 6.500v2.500"/></svg></span>
+          <span class="label">Replay Onboarding</span>
+          <svg class="chev" viewBox="0 0 16 16"><path d="M6 3.500 10.500 8 6 12.500"/></svg>
+        </button>
+      </li>
+      <li>
+        <button class="row" type="button">
+          <span class="tile"><svg viewBox="0 0 24 24"><path d="M18 9V6a2.500 2.500 0 0 0-2.500-2.500h-7A2.500 2.500 0 0 0 6 6v14.500l2.300-1.500 2.200 1.500"/><path d="M9.500 8h5M9.500 11.500h2.500"/><path d="M17.800 12.700a1.500 1.500 0 0 1 2.100 2.100l-4.600 4.600-2.800.7.700-2.800z"/></svg></span>
+          <span class="label">Edit Card</span>
+          <svg class="chev" viewBox="0 0 16 16"><path d="M6 3.500 10.500 8 6 12.500"/></svg>
+        </button>
+      </li>
+      <li>
+        <button class="row" type="button" id="invoiceRow" aria-haspopup="dialog" aria-expanded="false">
+          <span class="tile"><svg viewBox="0 0 24 24"><path d="M6 20.500V6a2.500 2.500 0 0 1 2.500-2.500h7A2.500 2.500 0 0 1 18 6v14.500l-2-1.400-2 1.400-2-1.400-2 1.400-2-1.400z"/><path d="M9.500 8h5M9.500 11.500h3"/></svg></span>
+          <span class="label">Get Invoice</span>
+          <span class="slot" id="slot" aria-hidden="true"></span>
+        </button>
+      </li>
+      <li>
+        <button class="row" type="button">
+          <span class="tile"><svg viewBox="0 0 24 24"><path d="M12 6.500C10.500 5.300 8.300 4.800 5.500 5A1.500 1.500 0 0 0 4 6.500v10.300c0 .8.700 1.500 1.500 1.400 2.600-.2 4.800.3 6.500 1.500 1.700-1.200 3.900-1.700 6.500-1.500.8.100 1.500-.6 1.500-1.400V6.500A1.500 1.500 0 0 0 18.500 5c-2.800-.2-5 .3-6.500 1.500zM12 6.500v13.200"/></svg></span>
+          <span class="label">Library Updates</span>
+          <svg class="chev" viewBox="0 0 16 16"><path d="M6 3.500 10.500 8 6 12.500"/></svg>
+        </button>
+      </li>
+      <li>
+        <button class="row" type="button">
+          <span class="tile"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.500"/><path d="M9.800 9.700a2.300 2.300 0 0 1 4.500.6c0 1.500-2.300 2-2.300 3.400M12 16.600v.1"/></svg></span>
+          <span class="label">Need Help?</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Generated with Higgsfield (transparent PNG), served straight from Higgsfield's CDN -->
+  <img class="card" alt="" draggable="false"
+       src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261010_061200_b7d350e8-4ded-426f-b4b6-13c1f9151177.png">
+
+  <div class="dim" id="dim"></div>
+
+  <div class="paper" id="paper" role="dialog" aria-label="Invoice" aria-hidden="true">
+    <div class="panel panel--mid"><div class="face" data-sheet></div></div>
+    <div class="panel panel--bot" id="bot"><div class="face" data-sheet><div class="shade"></div></div></div>
+    <div class="panel panel--top" id="top">
+      <div class="face face--front" data-sheet><div class="shade"></div></div>
+      <div class="face face--back"><div class="shade"></div></div>
+    </div>
+  </div>
+
+  <button class="download" id="download" type="button" tabindex="-1"><span>Download PDF</span></button>
+</section>
+
+<template id="sheetTpl">
+  <div class="sheet">
+    <h2>Invoice</h2>
+    <div class="logo"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div class="meta">
+      <div>Invoice number <b>1784925191620</b></div>
+      <div>Date of issue <b>June 18, 2026</b></div>
+      <div>Date due <b>June 18, 2026</b></div>
+    </div>
+
+    <div class="from">
+      <strong>Interface Craft</strong>
+      <div>2108 N St Ste N</div>
+      <div>Sacramento, CA 95816 US</div>
+    </div>
+
+    <div class="to">
+      <strong>Bill to</strong>
+      <div class="name">ANKUR</div>
+      <div class="mail">ankursahuhp@gmail.com</div>
+    </div>
+    <span class="chip">Edit</span>
+
+    <div class="rule rule--a"></div>
+    <div class="line line--1">
+      <span>Membership</span>
+      <span class="amt">$249.00
+        <svg class="mark mark--strike" viewBox="0 0 64 10" preserveAspectRatio="none"><path data-mark="strike" pathLength="1" d="M1 3.200C16 1.800 40 3.200 63 6.200C46 5 22 5.400 4 7"/></svg>
+      </span>
+    </div>
+    <div class="line line--2">
+      <span>JUNE30 (30% Off)</span>
+      <span class="amt">-$74.70</span>
+    </div>
+    <div class="rule rule--b"></div>
+    <div class="line line--3">
+      <span>Total paid</span>
+      <span class="amt">$174.30
+        <svg class="mark mark--circle" viewBox="0 0 84 34" preserveAspectRatio="none"><path data-mark="circle" pathLength="1" d="M50 3.500C68 2.500 83 8.500 82 17C81 27 60 32 40 31C18 30 2 26 3 16C4 7 24 2 46 3.500C62 4.600 76 9 80.500 15.500"/></svg>
+      </span>
+    </div>
+  </div>
+</template>
+
+<script>
+(() => {
+  const section  = document.getElementById('membership');
+  const row      = document.getElementById('invoiceRow');
+  const slot     = document.getElementById('slot');
+  const dim      = document.getElementById('dim');
+  const paper    = document.getElementById('paper');
+  const topFlap  = document.getElementById('top');
+  const botFlap  = document.getElementById('bot');
+  const download = document.getElementById('download');
+  const tpl      = document.getElementById('sheetTpl');
+
+  // Each third of the paper shows its own slice of the same invoice
+  paper.querySelectorAll('[data-sheet]').forEach(face => face.prepend(tpl.content.cloneNode(true)));
+
+  const sheets     = paper.querySelectorAll('.sheet');
+  const strikes    = paper.querySelectorAll('[data-mark="strike"]');
+  const circles    = paper.querySelectorAll('[data-mark="circle"]');
+  const topFront   = topFlap.querySelector('.face--front');
+  const topBack    = topFlap.querySelector('.face--back');
+  const topFrontSh = topFront.querySelector('.shade');
+  const topBackSh  = topBack.querySelector('.shade');
+  const botSh      = botFlap.querySelector('.shade');
+
+  const W = 420, H = 561, THIRD = 187, DIM = 0.64;
+  const quick = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.001 : 1;
+
+  const ease = {
+    linear: t => t,
+    outCubic: t => 1 - Math.pow(1 - t, 3),
+    inOutSine: t => 0.5 - Math.cos(Math.PI * t) / 2,
+    outQuad: t => 1 - (1 - t) * (1 - t)
+  };
+
+  // p: thumbnail → centre, top/bot: flap angles, ink: printed content
+  const v = { p: 0, top: 180, bot: 180, ink: 0, dim: 0, btn: 0, strike: 0, circle: 0 };
+  const tweens = {};
+  let raf = 0, open = false, rest = null, full = null;
+
+  function to(key, target, dur, delay = 0, fn = ease.outCubic) {
+    tweens[key] = { target, dur: dur * quick, delay: delay * quick, fn, from: null, t0: performance.now() };
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+
+  function tick(now) {
+    let busy = false;
+    for (const key in tweens) {
+      const tw = tweens[key];
+      const t = now - tw.t0 - tw.delay;
+      if (t < 0) { busy = true; continue; }
+      if (tw.from === null) tw.from = v[key];
+      const k = tw.dur <= 0 ? 1 : Math.min(1, t / tw.dur);
+      v[key] = tw.from + (tw.target - tw.from) * tw.fn(k);
+      if (k < 1) busy = true; else delete tweens[key];
+    }
+    render();
+    raf = busy ? requestAnimationFrame(tick) : 0;
+  }
+
+  function measure() {
+    const s = section.getBoundingClientRect();
+    const r = slot.getBoundingClientRect();
+    const k = r.width / W;
+    rest = { x: r.left - s.left, y: r.top - s.top + (r.height - THIRD * k) / 2 - THIRD * k, s: k };
+
+    const gap = 16, btn = 44;
+    const scale = Math.min(1, (s.width - 32) / W, (s.height - 36 - gap - btn) / H);
+    const y = Math.max(18, (s.height - (H * scale + gap + btn)) / 2);
+    full = { x: (s.width - W * scale) / 2, y, s: scale, btnY: y + H * scale + gap };
+  }
+
+  function render() {
+    if (!rest) measure();
+    const p = v.p;
+    const x = rest.x + (full.x - rest.x) * p;
+    const y = rest.y + (full.y - rest.y) * p;
+    const s = rest.s + (full.s - rest.s) * p;
+    paper.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+
+    const travel = 0.13 * Math.sin(Math.PI * Math.min(1, Math.max(0, p) * 1.3));
+    const tilt = a => Math.sin(a * Math.PI / 180);
+
+    topFlap.style.transform = `rotateX(${-v.top}deg)`;
+    const facingBack = v.top > 90;
+    topFront.style.visibility = facingBack ? 'hidden' : 'visible';
+    topBack.style.visibility = facingBack ? 'visible' : 'hidden';
+    topBackSh.style.opacity = travel + 0.1 * tilt(v.top);
+    topFrontSh.style.opacity = 0.1 * tilt(v.top);
+
+    botFlap.style.transform = `rotateX(${v.bot}deg)`;
+    botFlap.style.visibility = v.bot > 90 ? 'hidden' : 'visible';
+    botSh.style.opacity = 0.1 * tilt(v.bot);
+
+    sheets.forEach(el => { el.style.opacity = v.ink; });
+    strikes.forEach(el => { el.style.strokeDashoffset = 1 - v.strike; });
+    circles.forEach(el => { el.style.strokeDashoffset = 1 - v.circle; });
+
+    dim.style.opacity = v.dim * DIM;
+    download.style.opacity = v.btn;
+    download.style.transform = `translate(-50%, ${full.btnY + (1 - v.btn) * 7}px)`;
+  }
+
+  function show() {
+    if (open) return;
+    open = true;
+    measure();
+    section.classList.add('is-open');
+    row.setAttribute('aria-expanded', 'true');
+    paper.setAttribute('aria-hidden', 'false');
+    download.tabIndex = 0;
+
+    to('ink', 1, 0);
+    to('dim', 1, 320, 0, ease.outQuad);
+    to('p', 1, 340, 0, ease.outCubic);           // lift out of the row
+    to('top', 0, 280, 100, ease.inOutSine);      // top third opens upward
+    to('bot', 0, 230, 330, ease.inOutSine);      // bottom third drops down
+    to('btn', 1, 200, 620, ease.outCubic);
+    to('strike', 1, 330, 1100, ease.inOutSine);  // pen strikes the old price
+    to('circle', 1, 210, 1780, ease.inOutSine);  // …then circles the total
+  }
+
+  function hide() {
+    if (!open) return;
+    open = false;
+    section.classList.remove('is-open');
+    row.setAttribute('aria-expanded', 'false');
+    paper.setAttribute('aria-hidden', 'true');
+    download.tabIndex = -1;
+
+    to('ink', 0, 40, 0, ease.linear);
+    to('strike', 0, 40, 0, ease.linear);
+    to('circle', 0, 40, 0, ease.linear);
+    to('btn', 0, 130, 0, ease.outQuad);
+    to('bot', 180, 80, 0, ease.outQuad);
+    to('top', 180, 200, 70, ease.outCubic);
+    to('p', 0, 320, 40, ease.outCubic);
+    to('dim', 0, 300, 0, ease.outQuad);
+  }
+
+  row.addEventListener('click', () => (open ? hide() : show()));
+  dim.addEventListener('click', hide);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && open) { hide(); row.focus(); } });
+
+  const relayout = () => { measure(); render(); };
+  addEventListener('resize', relayout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+  section.querySelector('.card').addEventListener('load', relayout);
+  relayout();
+})();
+</script>
+</body>
+</html>
